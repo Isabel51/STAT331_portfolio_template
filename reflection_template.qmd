@@ -78,15 +78,15 @@ teacher_evals_clean <- teacher_evals |>
 
 ```{r}
 #| label: wd-3-string
-#Lab 5 Potential Suspects (Edit: Included an extra filter step to include the info provided by Morty.)
-get_fit_now_check_in |> #Looking for the killer that Morty saw carrying a gym bag and Annabel identified at the gym on January 9, 2018.
-  full_join(get_fit_now_member,
-            by = join_by(membership_id == id)) |> #Joining check-in and membership data sets.
-  right_join(interview,
-            by = join_by(person_id == person_id)) |> #Checking the interviews to find potential suspects.
-  filter(check_in_date == "20180109",
-         str_detect(membership_id,
-                    "^48Z")) #Only looking for interviews for those that checked in on Jan 9, 2018 and a membership number starting with 48Z. Jeremy Bowers is a potential suspect.
+#Lab 5 Witness Interviews (Edit: included both interviews in one pipeline)
+person |>
+  filter((address_street_name == "Northwestern Dr" &
+         address_number == max(address_number)) | #The first witness is Morty Schapiro
+  address_street_name == "Franklin Ave" &
+         str_detect(name, 
+                    "^Annabel")) |>  #The second witness is Annabel Miller
+  left_join(interview,
+            by = join_by(id == person_id))
 ```
 
 -   factor
@@ -104,12 +104,32 @@ ca_childcare <- counties |>
 
 ```{r}
 #| label: wd-3-date
-#Lab 5 Crime Scene Report (Edit: Converted date to a date-time variable)
-crime_scene_report |>
-  mutate(date = ymd(date)) |> 
-  filter(city == "SQL City",
-         date == ymd(20180115),
-         type == "murder")
+#Lab 5 Finding the final suspect (Edit: Created a time interval from the ymd() in lubridate. Added extra filter step to only include individuals that had attended the concert 3 times. Also, changed to inner joins and left joins.)
+
+facebook_event_checkin |>
+ 
+   #Filtering all the SQL Symphony event checkins during December of 2017.
+  mutate(date = ymd(date)) |>
+  filter(event_name == "SQL Symphony Concert",  
+         date %in% ymd("20171201":"20171231")) |>
+  
+  #Filtering out the amount of people that attended the concert ONLY 3 times during the time interval.
+  count(person_id) |> 
+  filter(n == 3) |> 
+  
+  #Joining the Facebook dataframe to person and drivers license dataframes to access the suspects personal info.
+  inner_join(person,
+            by = join_by(person_id == id)) |>
+  inner_join(drivers_license,
+            by = join_by(license_id == id)) |> 
+  
+  #Identifying the final suspect with the description provided by Jeremy Bowers.
+  filter(hair_color == "red",
+         car_make == "Tesla",
+         car_model == "Model S") |>
+  left_join(interview,
+             by = join_by(person_id == person_id)) 
+#Miranda did not provide a statement, suspicious.
 ```
 
 **WD-4: I can modify existing variables and create new variables in a dataframe for a *variety* of data types (e.g., numeric, integer, character, factor, date).**
@@ -206,7 +226,11 @@ crime_scene_report |>
 #| label: wd-5-left
 #Lab 5 Witness Interviews (Edit: included both interviews in one pipeline)
 person |>
-  filter(name == "Annabel Miller"| name == "Morty Schapiro") |> #Only looking for Annabel and Morty's interview
+  filter((address_street_name == "Northwestern Dr" &
+         address_number == max(address_number)) | #The first witness is Morty Schapiro
+  address_street_name == "Franklin Ave" &
+         str_detect(name, 
+                    "^Annabel")) |>  #The second witness is Annabel Miller
   left_join(interview,
             by = join_by(id == person_id))
 ```
@@ -217,7 +241,7 @@ person |>
 #| label: wd-5-right
 #Lab 5 Potential Suspects (Edit: Included an extra filter step to include the info provided by Morty.)
 get_fit_now_check_in |> #Looking for the killer that Morty saw carrying a gym bag and Annabel identified at the gym on January 9, 2018.
-  full_join(get_fit_now_member,
+  right_join(get_fit_now_member,
             by = join_by(membership_id == id)) |> #Joining check-in and membership data sets.
   right_join(interview,
             by = join_by(person_id == person_id)) |> #Checking the interviews to find potential suspects.
@@ -237,35 +261,47 @@ ca_childcare <- counties |>
              by = join_by(county_fips_code == county_fips_code))
 ```
 
--   `full_join()`
-
-```{r}
-#| label: wd-5-full
-#Lab 5 Potential Suspects (Edit: Included an extra filter step to include the info provided by Morty.)
-get_fit_now_check_in |> #Looking for the killer that Morty saw carrying a gym bag and Annabel identified at the gym on January 9, 2018.
-  full_join(get_fit_now_member,
-            by = join_by(membership_id == id)) |> #Joining check-in and membership data sets.
-  right_join(interview,
-            by = join_by(person_id == person_id)) |> #Checking the interviews to find potential suspects.
-  filter(check_in_date == "20180109",
-         str_detect(membership_id,
-                    "^48Z")) #Only looking for interviews for those that checked in on Jan 9, 2018 and a membership number starting with 48Z. Jeremy Bowers is a potential suspect.
-```
-
 **WD-6: I can use filtering joins to filter rows from a dataframe.**
 
 -   `semi_join()`
 
 ```{r}
 #| label: wd-6-semi
+#Lab 4 Question 4. (Edit: Created a dataframe to only include study year's 2008 and 2018. Then I used a semi_join to join ca_childcare and the new dataframe (study_year_df) to filter out the unwanted years).
 
+study_year_df <- tibble(study_year = c(2008,
+                                    2018))
+#Semi_join will filter out rows that do not match with the new dataframe.
+ca_childcare |>
+  semi_join(study_year_df, by = "study_year") |>
+  group_by(study_year,
+           region) |>
+  summarise(median_hi = median(mhi_2018),
+            .groups = "drop") |>
+  pivot_wider(names_from = study_year,
+              values_from = median_hi, 
+              names_prefix = "income_") |>
+  arrange(income_2018)
 ```
 
 -   `anti_join()`
 
 ```{r}
 #| label: wd-6-anti
+#Lab 4 Question 4 (Edit: Created a dataframe of all the study years EXCEPT 2008 and 2018. Then, I used an anti_join to join ca_childcare and the new dataframe (study_year_df2). Since there were no matches for study years 2008 and 2018, the output only showed information for those two years).
 
+study_year_df2 <- tibble(study_year = c(2009:2017))
+#Anti_join will filter out rows of data that match with the new dataframe.
+ca_childcare |>
+  anti_join(study_year_df2, by = "study_year") |>
+  group_by(study_year,
+           region) |>
+  summarise(median_hi = median(mhi_2018),
+            .groups = "drop") |>
+  pivot_wider(names_from = study_year,
+              values_from = median_hi, 
+              names_prefix = "income_") |>
+  arrange(income_2018)
 ```
 
 **WD-7: I can pivot dataframes from long to wide and visa versa**
@@ -321,10 +357,15 @@ ggplot(mapping = aes (x = study_year,
 
 ```{r}
 #| label: wd-7-wide
-#Lab 4 Question 4 (Edit: Included `%in% instead of the OR bar within the filter().)
+#Lab 4 Question 4. (Edit: Created a dataframe to only include study year's 2008 and 2018. Then included a semi_join to filter the unwanted years)
+
+study_year_df <- tibble(study_year = c(2008,
+                                    2018))
+
 ca_childcare |>
-  filter(study_year %in% c(2008,2018)) |>
-  group_by(study_year, region) |>
+  semi_join(study_year_df, by = "study_year") |>
+  group_by(study_year,
+           region) |>
   summarise(median_hi = median(mhi_2018),
             .groups = "drop") |>
   pivot_wider(names_from = study_year,
@@ -411,22 +452,27 @@ ggplot(mapping = aes (x = study_year,
 
 ```{r}
 #| label: r-2-3
-#Lab 3 Question 7
-#Group together teacher-course columns
-teacher_evals_clean |>
-  group_by(teacher_id,
-           course_id) |>
-  # Summing up all of the NAs across variables
-  summarize(
-    across(.cols = question_no:sex,
-           .fns = ~ sum(is.na(.x))
-           ), .groups = "drop"
-  ) |>
-  # Filtering out all of the NAs
-  filter(
-    if_any(.cols = question_no:sex,
-           .fns = ~ .x != 0)
-  )
+#Lab 9 Question 1 (Edit: Changed the randomBabies function argument from .x to 4 instead because we want to simulate the 4 babies that are correctly returned within the 10,000 simulations).
+randomBabies <- function(nBabies = 4){
+  baby_data <- tibble(baby = 1:nBabies,
+                      returned_babies = sample (1:nBabies,
+                                                size = nBabies,
+                                                replace = FALSE)
+                      )
+    correct_returns <- baby_data |>
+      mutate(correct_baby = ifelse(baby == returned_babies,
+                                   TRUE,
+                                   FALSE)) |>
+      summarise(n_correct_babies = sum(correct_baby)) |> 
+      pull(n_correct_babies)
+    
+    return(correct_returns)
+    
+}
+
+results <- map_int(.x = 1:10000,
+                   .f = ~randomBabies(4)
+                   )
 ```
 
 **R-3: I can write robust programs that are resistant to changes in inputs.**
@@ -435,22 +481,6 @@ teacher_evals_clean |>
 
 ```{r}
 #| label: r-3-example
-#Lab 4 Question 4 (Edit: Included `%in% instead of the OR bar within the filter().)
-ca_childcare |>
-  filter(study_year %in% c(2008,2018)) |>
-  group_by(study_year, region) |>
-  summarise(median_hi = median(mhi_2018),
-            .groups = "drop") |>
-  pivot_wider(names_from = study_year,
-              values_from = median_hi, 
-              names_prefix = "income_") |>
-  arrange(income_2018)
-```
-
--   Example of function stops
-
-```{r}
-#| label: r-3-function-stops
 #Lab 4 Question 5
 ca_childcare |>
   filter(study_year == 2018) |>
@@ -458,6 +488,22 @@ ca_childcare |>
   summarize(median_weekly_price = median(mc_infant)) |>
   slice_min(median_weekly_price,
             n=1)
+```
+
+-   Example of function stops
+
+```{r}
+#| label: r-3-function-stops
+#Challenge 7 Question 2
+NA_input <- function(x, min, max) {
+  x <- case_when(x < min ~ NA,
+                 x > max ~ NA,
+                 .default = x)
+    if(!is.numeric(x)) {
+      stop("Please provide a numeric input for the x argument.")
+    }
+  return(x)
+}
 ```
 
 ## Data Visualization & Summarization
@@ -523,7 +569,47 @@ ggplot(data = teacher_evals_compare,
 
 ```{r}
 #| label: dvs-2-date
+#Lab 4 Question 6 (Edit: Changed the color palette of my plot)
+colors <- colorRampPalette(brewer.pal(8, "Accent"))(10)
 
+ca_childcare |>
+  filter(study_year >= 2008) |>
+  pivot_longer(cols = c(mc_infant,
+                        mc_toddler,
+                        mc_preschool),
+               names_to = "age_demo",
+               values_to = "median_weekly_price") |>
+  mutate(age_demo = fct_recode(age_demo,
+                               "Infant" = "mc_infant",
+                               "Toddler" = "mc_toddler",
+                               "Preschool" = "mc_preschool"),
+         age_demo = fct_relevel(age_demo,
+                                 "Infant",
+                                 "Toddler",
+                                 "Preschool")
+         ) |> 
+ggplot(mapping = aes (x = study_year,
+                        y = median_weekly_price,
+                      color = fct_reorder2(.f = region,
+                                           .x = study_year,
+                                           .y = median_weekly_price))) +
+  geom_point() +
+  geom_smooth(method = "loess",
+              se = TRUE) +
+  facet_wrap(~age_demo) +
+  labs(x = "Study Year",
+       y = "",
+       title = "Weekly Median Price for Center-Based Childcare ($)",
+       color = "California Region") +
+  scale_color_manual(values = colors) + 
+  scale_x_continuous(breaks = seq(2008,
+                                  2018,
+                                  by = 2)) +
+  guides(x = guide_axis(n.dodge = 2)) +
+  theme_bw() +
+  scale_y_continuous(limits = c(0,
+                                500),
+                     labels = scales::label_dollar())
 ```
 
 **DVS-2: I use plot modifications to make my visualization clear to the reader.**
@@ -548,7 +634,7 @@ ggplot(data = surveys,
 
 ```{r}
 #| label: dvs-2-2
-#Lab 2 Question 13 (Edit: Decreased alpha to make the points more transparent allowing the boxplots to be seen.)
+#Lab 2 Question 13 (Edit: Decreased alpha to make the points more transparent allowing the boxplots to be seen. I also removed the tilting on the y-axis)
 ggplot(data = surveys,
        mapping = aes(x = species,
                      y = weight)) +
@@ -558,9 +644,7 @@ ggplot(data = surveys,
   labs(x = "Species",
        y = "",
        title = "Weight Distributions Across Rodent Species",
-       subtitle = "Weight (g)") +
-  theme(axis.text.x = element_text(angle = 45, 
-                                   hjust = 1))
+       subtitle = "Weight (g)")
 ```
 
 -   I can reorder my legend to align with the colors in my plot
@@ -696,20 +780,25 @@ ggplot(data = surveys,
 
 ```{r}
 #| label: dvs-3-3
-#Lab 4 Question 7 (Edit: Removed summarize () and added color to CA regions. Also, made the regression line more distinct and created a more informative title.)
-  ggplot(data = ca_childcare,
-         mapping = aes(x = mhi_2018,
-                       y = mc_infant)) +
-  geom_point(mapping = aes(color = region)) +
-  geom_smooth(method = "lm",
-              color = "black") +
-  scale_colour_brewer(palette = "Paired") +
-  labs(x = "Median Household Income",
+#Challenge 7 Question 4 (Edit:To reduce the amount of noise in my plot I had to remove condition indices that were less than 10.)
+
+fish_health |>
+  filter(condition_index < 10) |>
+ggplot(mapping = aes(x = year, 
+                     y = condition_index, 
+                     color = species)) +
+  geom_jitter(width = 0.2,
+              height = 0,
+              alpha = 0.5) +
+  geom_smooth(method = "loess", se = FALSE, size = 1) +
+  scale_color_brewer(palette = "Paired") +
+  facet_wrap(~ species) +
+  labs(x = "Year",
        y = "",
-       title = "Infant Childcare Prices Increase Along With Household Income",
-       color = "California Region") +
-  scale_x_continuous(labels = scales::label_dollar()) +
-  scale_y_continuous(labels = scales::label_dollar())
+       color = "Species",
+       title = "Fish Condition Indices Throughout the Study") +
+  theme_minimal() +
+  theme(legend.position = "none")
 ```
 
 **DVS-4: I can calculate numerical summaries of variables.**
@@ -760,10 +849,15 @@ teacher_evals_clean |>
 
 ```{r}
 #| label: dvs-5-1
-#Lab 4 Question 4 (Edit: Included `%in% instead of the OR bar within the filter().)
+#Lab 4 Question 4. (Edit: Created a dataframe to only include study year's 2008 and 2018. Then included a semi_join to filter the unwanted years)
+
+study_year_df <- tibble(study_year = c(2008,
+                                    2018))
+
 ca_childcare |>
-  filter(study_year %in% c(2008,2018)) |>
-  group_by(study_year, region) |>
+  semi_join(study_year_df, by = "study_year") |>
+  group_by(study_year,
+           region) |>
   summarise(median_hi = median(mhi_2018),
             .groups = "drop") |>
   pivot_wider(names_from = study_year,
@@ -791,29 +885,60 @@ ca_childcare |>
 
 ```{r}
 #| label: dvs-6-1
-#Lab 4 Question 4 (Edit: Included `%in% instead of the OR bar within the filter().)
-ca_childcare |>
-  filter(study_year %in% c(2008,2018)) |>
-  group_by(study_year, region) |>
-  summarise(median_hi = median(mhi_2018),
-            .groups = "drop") |>
-  pivot_wider(names_from = study_year,
-              values_from = median_hi, 
-              names_prefix = "income_") |>
-  arrange(income_2018)
+#Lab 8 Question 3
+
+evals |>
+  distinct(teacher_id, 
+           .keep_all = TRUE) |>
+  mutate(sen_level = if_else(seniority <= 4,
+                             "Junior (4 years or less)",
+                             "Senior (more than 4 years)")) |>
+  pivot_longer(cols = c(academic_degree,
+                        sen_level,
+                        sex),
+               names_to = "category",
+               values_to = "value") |>
+  count(value) |>
+  pivot_wider(names_from = value,
+              values_from = n,
+              values_fill = list(n = 0)) |>
+  select(Female = female,
+         Male = male,
+         `Junior (4 years or less)`,
+         `Senior (more than 4 years)`,
+         `No Degree` = no_dgr,
+         Masters = ma,
+         Doctorate = dr,
+         Professor = prof) |>
+  kable(format = "html",
+        align = "c") |>
+  kable_styling(bootstrap_options = c("striped",
+                "bordered",
+                "hover",
+                "basic"))
 ```
 
 -   Example 2
 
 ```{r}
 #| label: dvs-6-2
-#Lab 4 Question 5
-ca_childcare |>
-  filter(study_year == 2018) |>
-  group_by(region) |>
-  summarize(median_weekly_price = median(mc_infant)) |>
-  slice_min(median_weekly_price,
-            n=1)
+#Lab 8 Question 4 (Edit: Rather than using the t() to transpose my data, I switched to a pivot wider).
+
+map_missing_values <- function(df) {
+  missing_val <- map_int (df, ~ sum(is.na(.)))
+  return(missing_val)
+}
+
+missing_values <- map_missing_values(fish)
+
+enframe(missing_values, name = "Variable", value = "Missing Values") |>
+  pivot_wider(names_from = Variable, values_from = `Missing Values`) |>
+  kable(format = "html", caption = "Missing Values of Fish Weight") |> 
+  kable_styling(full_width = TRUE, 
+                position = "center",
+                bootstrap_options = c("striped",
+                "bordered",
+                "hover"))
 ```
 
 **DVS-7: I show creativity in my tables.**
@@ -822,38 +947,54 @@ ca_childcare |>
 
 ```{r}
 #| label: dvs-7-1
-#Lab 4 Question 4 (Edit: Included `%in% instead of the OR bar within the filter().)
-ca_childcare |>
-  filter(study_year %in% c(2008,2018)) |>
-  group_by(study_year, region) |>
-  summarise(median_hi = median(mhi_2018),
-            .groups = "drop") |>
-  pivot_wider(names_from = study_year,
-              values_from = median_hi, 
-              names_prefix = "income_") |>
-  arrange(income_2018)
+#Lab 8 Question 4 (Edit: Used functions form the gt package to reformat and include cell borders to the table).
+map_missing_values <- function(df) {
+  missing_val <- map_int (df, ~ sum(is.na(.)))
+  return(missing_val)
+}
+
+missing_values <- map_missing_values(fish)
+
+enframe(missing_values, name = "Variable", 
+        value = "Missing Values") |>
+  gt() |>
+  tab_header (title = "Missing Values of Fish Weight") |>
+  cols_label(Variable = "Variable",
+             `Missing Values` = "Count of Missing Values") |>
+  fmt_number(columns = `Missing Values`,
+             decimals = 0) |>
+  tab_options(table.width = px(800),
+              table.align = "center") |>
+  tab_style(style = cell_borders(sides = c("top", 
+                                           "bottom"),
+      color = "gray",
+      weight = px(1)),
+      locations = cells_body())
 ```
 
 -   Example 2
 
 ```{r}
 #| label: dvs-7-2
-#Lab 5 Finding the final suspect (Edit: Created a time interval from the ymd() in lubridate. Added extra filter step to only include individuals that had attended the concert 3 times. Also, changed to inner joins and left joins.)
-facebook_event_checkin |>
-  mutate(date = ymd(date)) |>
-  filter(event_name == "SQL Symphony Concert", #Filtering all the SQL Symphony event checkins during December of 2017. 
-         date %in% ymd("20171201":"20171231")) |>
-  count(person_id) |> 
-  filter(n == 3) |> #Filtering out the amount of people that attended the concert 3 times during the time interval.
-  inner_join(person,
-            by = join_by(person_id == id)) |>
-  inner_join(drivers_license,
-            by = join_by(license_id == id)) |> #Identifying the final suspect with the description Jeremy provided.
-  filter(hair_color == "red",
-         car_make == "Tesla",
-         car_model == "Model S") |>
-  left_join(interview,
-             by = join_by(person_id == person_id)) #Miranda did not provide a statement.
+#Lab 8 Question 1 (Edit: Used functions form the gt package to reformat and include cell borders to the table).
+
+map_data_types <- function(df) {
+  typ <- map_chr (df, class)
+  return(typ)
+}
+data_types <- map_data_types(surveys)
+
+enframe(data_types, name = "Variable", value = "Data Type") |>
+  gt() |>
+  tab_header(title = "Data Types of Surveys") |>
+  cols_label(Variable = "Variable",
+             `Data Type` = "Data Type") |>
+  tab_options(table.width = px(800),
+              table.align = "center") |>
+  tab_style(style = cell_borders(sides = c("top", "bottom"),
+                                 color = "lightgrey",
+                                 weight = px(1)),
+            locations = cells_body())
 ```
 
 ## Program Efficiency
@@ -904,7 +1045,15 @@ teacher_evals_clean |>
 
 ```{r}
 #| label: pe-1-map-1
-
+#Lab 8 Question 2
+evals |>
+  map_at(.at = c("teacher_id",
+                   "weekday",
+                   "academic_degree",
+                   "seniority",
+                   "sex"),
+                   .f = ~as.factor(.x)) |>
+  bind_cols()
 ```
 
 **PE-2: I can write functions to reduce repetition in my code.**
@@ -913,49 +1062,48 @@ teacher_evals_clean |>
 
 ```{r}
 #| label: pe-2-1
-#Lab 4 Question 4 (Edit: Included `%in% instead of the OR bar within the filter().)
-ca_childcare |>
-  filter(study_year %in% c(2008,2018)) |>
-  group_by(study_year, region) |>
-  summarise(median_hi = median(mhi_2018),
-            .groups = "drop") |>
-  pivot_wider(names_from = study_year,
-              values_from = median_hi, 
-              names_prefix = "income_") |>
-  arrange(income_2018)
+#Lab 9 Question 1 (Edit: Changed the randomBabies function argument from .x to 4 instead because we want to simulate the 4 babies that are correctly returned within the 10,000 simulations).
+randomBabies <- function(nBabies = 4){
+  baby_data <- tibble(baby = 1:nBabies,
+                      returned_babies = sample(1:nBabies,
+                                               size = nBabies,
+                                               replace = FALSE)
+                      )
+    correct_returns <- baby_data |>
+      mutate(correct_baby = ifelse(baby == returned_babies,
+                                   TRUE,
+                                   FALSE)) |>
+      summarise(n_correct_babies = sum(correct_baby)) |> 
+      pull(n_correct_babies)
+    
+    return(correct_returns)
+    
+}
+
+results <- map_int(.x = 1:10000,
+                   .f = ~randomBabies(4)
+                   )
 ```
 
 -   Function that operates on data frames
 
 ```{r}
 #| label: pe-2-2
-#Challenge 2 Exploring annotations (Edit: Used ChatGPT to reduce the number of times I used `annotate()`. https://chatgpt.com/share/6727f7b3-defc-8007-aa51-570c9c2a9c8b)
+#Lab 8 question 1
+map_data_types <- function(df) {
+  typ <- map_chr (df, class)
+  return(typ)
+}
+data_types <- map_data_types(surveys)
 
-#Dataframe for genus annotations
-genus_annotations <- data.frame(
-  x = rep(250, 14),
-  y = 1:14,
-  label = c("Neotoma", "Chaetodipus", "Peromyscus", "Perognathus", "Reithrodontomys", 
-            "Sigmodon", "Onychomys", "Peromyscus", "Reithrodontomys", "Dipodomys", 
-            "Dipodomys", "Chaetodipus", "Dipodomys", "Onychomys"))
-
-ggplot(data = surveys, 
-       mapping = aes(x = weight, 
-                     y = species, 
-                     color = genus)) +
-  geom_boxplot() +
-  scale_color_manual(values = cdPalette_blk) +
-  geom_text(data = genus_annotations, #Using `geom_text` to incorporate dataframe for genus annotations
-            aes(x = x,
-                y = y, 
-                label = label),
-            inherit.aes = FALSE) + #Argument used to ignore aesthetics within ggplot().
-  theme(legend.position = "none") +
-  labs(x = "Weight (g)", 
-       y = "", 
-       title = "Weight Distributions Across Rodents",
-       subtitle = "Species", 
-       legend = "Genus")
+enframe(data_types, name = "Variable", value = "Data Type") |>
+  pivot_wider(names_from = Variable, values_from = `Data Type`) |>
+  kable(format = "html", caption = "Data Types of Surveys") |> 
+  kable_styling(full_width = TRUE, 
+                position = "center",
+                bootstrap_options = c("striped",
+                "bordered",
+                "hover"))
 ```
 
 **PE-3:I can use iteration to reduce repetition in my code.**
@@ -986,14 +1134,39 @@ teacher_evals_clean |>
 
 ```{r}
 #| label: pe-3-map-1
+#Lab 9 Question 1 (Edit: Changed the randomBabies function argument from .x to 4 instead because we want to simulate the 4 babies that are correctly returned within the 10,000 simulations).
+randomBabies <- function(nBabies = 4){
+  baby_data <- tibble(baby = 1:nBabies,
+                      returned_babies = sample (1:nBabies,
+                                                size = nBabies,
+                                                replace = FALSE)
+                      )
+    correct_returns <- baby_data |>
+      mutate(correct_baby = ifelse(baby == returned_babies,
+                                   TRUE,
+                                   FALSE)) |>
+      summarise(n_correct_babies = sum(correct_baby)) |> 
+      pull(n_correct_babies)
+    
+    return(correct_returns)
+    
+}
 
+results <- map_int(.x = 1:10000,
+                   .f = ~randomBabies(4)
+                   )
 ```
 
 -   `map()` function with **more than one** input (e.g., `map_2()` or `pmap()`)
 
 ```{r}
 #| label: pe-3-map-2
-
+#Lab 9 Question 6
+all_simulations <- grid |> 
+  mutate(simulated_means = pmap(.l = list(n = n, df = df), 
+                                .f = simulate_means)
+         ) |> 
+  unnest(simulated_means) 
 ```
 
 **PE-4: I can use modern tools when carrying out my analysis.**
@@ -1002,16 +1175,22 @@ teacher_evals_clean |>
 
 ```{r}
 #| label: pe-4-1
-#Lab 4 Question 4 (Edit: Included `%in% instead of the OR bar within the filter().)
-ca_childcare |>
-  filter(study_year %in% c(2008,2018)) |>
-  group_by(study_year, region) |>
-  summarise(median_hi = median(mhi_2018),
-            .groups = "drop") |>
-  pivot_wider(names_from = study_year,
-              values_from = median_hi, 
-              names_prefix = "income_") |>
-  arrange(income_2018)
+#Lab 3 Question 7
+#Group together teacher-course columns
+teacher_evals_clean |>
+  group_by(teacher_id,
+           course_id) |>
+  # Summing up all of the NAs across variables
+  summarize(
+    across(.cols = question_no:sex,
+           .fns = ~ sum(is.na(.x))
+           ), .groups = "drop"
+  ) |>
+  # Filtering out all of the NAs
+  filter(
+    if_any(.cols = question_no:sex,
+           .fns = ~ .x != 0)
+  )
 ```
 
 -   I can connect a data wrangling pipeline into a `ggplot()`
@@ -1069,14 +1248,40 @@ ggplot(mapping = aes (x = study_year,
 
 ```{r}
 #| label: dsm-1-1
+#Lab 9 Question 1 (Edit: Changed the randomBabies function argument from .x to 4 instead because we want to simulate the 4 babies that are correctly returned within the 10,000 simulations).
+randomBabies <- function(nBabies = 4){
+  baby_data <- tibble(baby = 1:nBabies,
+                      returned_babies = sample (1:nBabies,
+                                                size = nBabies,
+                                                replace = FALSE)
+                      )
+    correct_returns <- baby_data |>
+      mutate(correct_baby = ifelse(baby == returned_babies,
+                                   TRUE,
+                                   FALSE)) |>
+      summarise(n_correct_babies = sum(correct_baby)) |> 
+      pull(n_correct_babies)
+    
+    return(correct_returns)
+    
+}
 
+results <- map_int(.x = 1:10000,
+                   .f = ~randomBabies(4)
+                   )
 ```
 
 -   Example 2
 
 ```{r}
 #| label: dsm-1-2
+#Lab 9 Question 4
 
+simulate_means <- function(n, df){
+  map_dbl(.x = seq_len(n),  #seq_len() creates a sequence from 1 to n.
+          .f = ~rchisq(n = 100, df = df) %>% mean()
+          )
+}
 ```
 
 **DSSM-2: I can conduct common statistical analyses in R.**
@@ -1106,7 +1311,7 @@ chisq.test(contingency_table)
 
 <!-- How did you revise your thinking throughout the course? How did you revise your thinking on the code examples you have provided in your portfolio? -->
 
-**In order to revise my thinking, I first had to read through ALL the provided feedback and figure out how to incorporate it into my edits. I referred to past lecture slides and package cheat sheets to find ways to improve the efficiency and tidiness of my code. Now, my code examples demonstrate my revised thinking, as shown by my code comments. I will also be submitting my revised labs on Friday.**
+**In order to revise my thinking, I first had to read through ALL the provided feedback and figure out how to incorporate it into my edits. I referred to past lecture slides and package cheat sheets to find ways to improve the efficiency and tidiness of my code. Now, my code examples demonstrate my revised thinking, as shown by my code comments. I have submitted revisions for every question that I have gotten a growing on and I have even revised some of my code that was given a success, like challenge 2 exploring annotations. My revisions have helped me implement efficienct practices when coding.**
 
 <!-- For the revisions included in your Portfolio, to help me understand the nature of your revisions, please denote somehow the feedback I provided you (e.g., boldface, italics, colored text) before your revisions. -->
 
@@ -1116,13 +1321,13 @@ chisq.test(contingency_table)
 
 <!-- How did you extended your thinking throughout the course? How did you extend your thinking on the code examples you have provided in your portfolio? -->
 
-**Thus far, I have extended my thinking by completing every challenge beyond the minimum requirement. Although initially it may not be correct, I believe this helps me extend my thinking by pushing myself to try complicated tasks. I also attempt to incorporate what I learn into other assignments.**
+**I have extended my thinking by attempting challenges beyond the minimum requirements. Although some of the questions could have been solved more efficiently, the fact that I pushed myself to learn complicated skills is proof of me proactively extending my thinking. All the code that have edit comments are more proof of extending my thinking as I was actively implementing the feedback from both Dr. T and peers to further improve my code.**
 
 ## Peer Support & Collaboration
 
 <!-- Include an image or a description of feedback you gave that you are proud of (either in a peer review or in Discord). -->
 
-**My lab 5 peer review: I really appreciate your ability to write tidy and efficient code. Your code comments really help improve the readability of your code as well. You did a great job of including white spaces, which made your code look more structured and organized. I would suggest that you consider staring a new line of code after every comma, as I noticed some code lines were a bit long. Additionally, you could improve the tidiness and efficiency of your code by piping into ggplot. Great job overall!**
+**My lab 9 peer review: Great job on writing tidy and efficient code! I really appreciate your use if named arguments as this really improves the readability and reproducibility of your code. Both your table and plot were easy to interpret as well. I would like to suggest that you consider implementing some function checks for number 1. Also, for number 3 I recommend you change your title to something more informative like “Proportion of Babies Correctly Returned in 10,000 Simulations.” This way you don’t need a subtitle, and your title is less repetitive. Great job overall!**
 
 <!-- Include a description of how you grew as a collaborator through the weekly pair programming activities.   -->
 

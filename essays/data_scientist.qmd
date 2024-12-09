@@ -1,5 +1,6 @@
 ---
 title: "My Growth as a Data Scientist"
+author: "Isabel Villafuerte"
 format: html
 editor: visual
 ---
@@ -9,3 +10,5 @@ editor: visual
 -   Focus specifically on data science concepts and the skills we employed in learning them, not a laundry list of topics that you learned (those are in the syllabus, so I know them already).
 
 -   Focus on a small number of specific areas of growth for you that happened in STAT 331. Identify at least one artifact in your portfolio that illustrates each area of growth and explain how this artifact shows growth in the way you are describing.
+
+**Throughout the quarter I gained many valuable skills and concepts. Specifically, exploring ggplot functions and being able to create a variety of visually appealing plots. At the beginning of the quarter, creating plots in R seemed like tedious work, but after learning more about the creative functions in ggplot, I feel way more confident in implementing what I have learned into my own research data. I am most proud of my Lab 4 question 6 ggplot code in dvs-3-1 as it really shows that I understand how to display data with various ggplot functions. I have also noticed that my ability to "wrangle" data has improved. Learning more about the dplyr functions and using them throughout the quarter has made me more comfortable with approaching large data sets. I am most proud of my Lab 3 question 7 code in DVS-4 as it shows my ability to output specific information in a tidy and efficient manner.**

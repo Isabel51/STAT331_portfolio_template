@@ -1,5 +1,6 @@
 ---
 title: "The Power of Efficiency"
+author: "Isabel Villafuerte"
 format: html
 editor: visual
 ---
@@ -15,3 +16,5 @@ As we’ve said in the class efficiency is a pivotal component of statistical co
 -   Why is efficiency important?
 
 -   Where did you encounter efficiency, and what were some [“a-ha” moments](https://www.merriam-webster.com/dictionary/aha%20moment) you had about efficiency? (For the latter, tie each a-ha moment to an artifact in the portfolio.)
+
+**Efficiency is the ability to perform a variety of tasks in a timely manner. In statistical computing efficiency is the ability to write code that can perform various tasks in a manner that does not require long/complex code. Efficiency allows you to write code that can be easily reproduced by other data scientist. Efficiency is important to produce high quality code that improves collaboration among other scientist. Writing complex code can potentially introduce more errors and can be confusing to interpret. In this class, my a-ha moment was during lab 3 question 10 in DVS-4. In order to calculate the min and max instructor ratings, I found myself creating separate pipelines of code for both the max and min ratings. I knew that what I was doing was repetitive and more tedious, but I could not think of another way to condense my code while also getting the desired output. I eventually learned that an OR bar `|` within a filter function allowed me to get the response I was looking for in an efficient way.**

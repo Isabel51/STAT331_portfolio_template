@@ -1,21 +1,26 @@
 ---
 title: "Lightening Round Essays"
+author: "Isabel Villafuerte"
 format: html
 editor: visual
 ---
 
 **Answer each of the following questions with *one sentence* including a brief explanation.**
 
-1. Finish the sentence with another student’s name: "If [Name of Student] doesn’t earn an A, then nobody should, because..." Explain your choice and your reasoning.
+1.  Finish the sentence with another student’s name: "If \[Noor Karaki\] doesn’t earn an A, then nobody should, because she works really hard in this class while also having to juggle more classes and despite this she tries her best to help others both on discord and in person.
 
+2.  What was the most difficult part of the class for you? List a general topic, a specific problem, a kind of work we did, etc. and explain why.
 
-2. What was the most difficult part of the class for you? List a general topic, a specific problem, a kind of work we did, etc. and explain why.
+**The most difficult part of the class were the practice activities, more specifically, the jewel heist activity because at the time I did not understand how the lubridate functions were supposed to be used.**
 
+3.  What was the easiest part of the class for you? Explain why.
 
-3. What was the easiest part of the class for you? Explain why.
+**The easiest part of the class was learning how to make plots and customizing them because once you understand the basics in data visualization you can easily pick up new tricks that can really elevate your plots.**
 
+4.  What part of the class surprised or interested you the most? Explain why.
 
-4. What part of the class surprised or interested you the most? Explain why.
+**Learning how to create my own function was a pretty cool skill as it allows me to accomplish specific tasks in various contexts.**
 
+5.  Give one piece of advice to a student just beginning a quarter of STAT 331 that will help them be successful in learning.
 
-5. Give one piece of advice to a student just beginning a quarter of STAT 331 that will help them be successful in learning.
+**Make sure to try your best, but don't be afraid of asking for help as Dr. T and other students provide various forms of support on discord and during office hours.**
